@@ -1,0 +1,7 @@
+# Node / React
+client/node_modules/
+client/dist/
+
+# .NET
+server/bin/
+server/obj/
