@@ -1,5 +1,3 @@
-// Derived summary bar — every value is computed by the caller from current
-// state and passed in, never stored. This component only renders.
 export default function SummaryBar({ total, selectedCount, statusCounts }) {
   return (
     <section className="summary" aria-label="Summary">

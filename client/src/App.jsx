@@ -11,15 +11,9 @@ import RecordTable from "./components/RecordTable";
 import RecordForm from "./components/RecordForm";
 import "./App.css";
 
-// App is the View/container: it reads derived slices out of the store via
-// selectors and hands the presentational components exactly the props they need,
-// wiring their callbacks to intents. It holds no state and computes nothing
-// itself — the store owns state, selectors own derivation, intents own effects.
 export default function App() {
   const intents = useIntents();
 
-  // Kick off the one-time load. StrictMode double-invokes this in dev; the
-  // load intent is idempotent (it just refetches), so that's harmless.
   useEffect(() => {
     intents.load();
   }, [intents]);

@@ -1,8 +1,5 @@
 const STATUS_OPTIONS = ["In Stock", "Reserved", "Sold"];
 
-// Controlled edit form for the selected record. `draft` holds the live input
-// values; `onFieldChange`/`onSave` report intent upward. The component owns no
-// state — every input is driven by props, which is what makes them controlled.
 export default function RecordForm({
   record,
   draft,

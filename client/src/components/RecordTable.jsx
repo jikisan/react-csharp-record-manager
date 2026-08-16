@@ -1,10 +1,7 @@
-// Turn a status string into a stable, CSS-safe modifier ("On Hold" -> "on-hold").
 function statusModifier(status) {
   return status.replace(/\s+/g, "-").toLowerCase();
 }
 
-// Scrollable, multi-column list of records. Presentational: it renders rows and
-// reports selection via `onSelect`; it holds no state of its own.
 export default function RecordTable({ records, selectedId, onSelect }) {
   return (
     <div className="table-scroll">

@@ -1,11 +1,5 @@
-// Record Manager API — .NET 10 Minimal API
-// No external NuGet packages: uses only what ships with Microsoft.NET.Sdk.Web
-// (System.Text.Json is part of the framework). All data is hard-coded and
-// held in-memory for the lifetime of the running process.
-
 var builder = WebApplication.CreateBuilder(args);
 
-// Allow the React dev server (Vite default port) to call this API from the browser.
 const string DevCorsPolicy = "AllowReactDevServer";
 builder.Services.AddCors(options =>
 {
@@ -18,12 +12,6 @@ builder.Services.AddCors(options =>
 var app = builder.Build();
 app.UseCors(DevCorsPolicy);
 
-// ---------------------------------------------------------------------------
-// In-memory data store
-// ---------------------------------------------------------------------------
-// initialRecords seeds the store. The `records` list is the single source of
-// truth on the server and is mutated in place (by replacing an element) when a
-// client saves an edit. State survives for as long as the app is running.
 var initialRecords = new List<RecordItem>
 {
     new(1, "Ford F-150",      "Truck", "In Stock", "Full-size pickup, 3.5L V6 EcoBoost, crew cab."),
@@ -35,20 +23,13 @@ var initialRecords = new List<RecordItem>
 };
 
 var records = new List<RecordItem>(initialRecords);
-var gate = new object(); // guards writes to the shared list
+var gate = new object();
 
-// ---------------------------------------------------------------------------
-// Endpoints
-// ---------------------------------------------------------------------------
-
-// Return all records. Read under the lock so we never enumerate the list while
-// a concurrent save is replacing an element.
 app.MapGet("/api/records", () =>
 {
     lock (gate) return Results.Ok(records.ToList());
 });
 
-// Return a single record by id.
 app.MapGet("/api/records/{id:int}", (int id) =>
 {
     lock (gate)
@@ -58,9 +39,6 @@ app.MapGet("/api/records/{id:int}", (int id) =>
     }
 });
 
-// Update an existing record. The id in the route wins; the body carries the
-// editable fields. We replace the element rather than mutating it, then return
-// the saved record so the client can sync its UI.
 app.MapPut("/api/records/{id:int}", (int id, RecordUpdate update) =>
 {
     lock (gate)
@@ -68,7 +46,6 @@ app.MapPut("/api/records/{id:int}", (int id, RecordUpdate update) =>
         var index = records.FindIndex(r => r.Id == id);
         if (index < 0) return Results.NotFound();
 
-        // Name is required. Reject a save that would clear it.
         var name = update.Name ?? records[index].Name;
         if (string.IsNullOrWhiteSpace(name))
             return Results.BadRequest("Name is required.");
@@ -88,14 +65,6 @@ app.MapPut("/api/records/{id:int}", (int id, RecordUpdate update) =>
 
 app.Run();
 
-// ---------------------------------------------------------------------------
-// Models
-// ---------------------------------------------------------------------------
-
-// The stored record. Using a positional record type gives value semantics and a
-// convenient `with` expression for immutable-style updates.
 record RecordItem(int Id, string Name, string Category, string Status, string Description);
 
-// The editable payload for a PUT. Every field is optional so a partial update
-// only overwrites what the client actually sent.
 record RecordUpdate(string? Name, string? Category, string? Status, string? Description);
