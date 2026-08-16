@@ -1,6 +1,6 @@
-// Thin wrapper around the C# Minimal API.
+// Transport layer: a thin wrapper around the C# Minimal API.
 // The backend runs on http://localhost:5105 (see server/Properties/launchSettings.json)
-// and permits this origin via CORS.
+// and permits this origin via CORS. Nothing here knows about React or UI state.
 const BASE_URL = "http://localhost:5105";
 
 // Load every record. Called once on startup.
