@@ -1,21 +1,41 @@
-import { useMemo } from "react";
-import { useRecords } from "./hooks/useRecords";
-import { useRecordEditor } from "./hooks/useRecordEditor";
-import { computeStatusCounts } from "./lib/derive";
+import { useEffect } from "react";
+import { useAppState, useIntents } from "./store/StoreProvider";
+import {
+  selectSelectedRecord,
+  selectSelectedCount,
+  selectStatusCounts,
+  selectIsDirty,
+} from "./store/selectors";
 import SummaryBar from "./components/SummaryBar";
 import RecordTable from "./components/RecordTable";
 import RecordForm from "./components/RecordForm";
 import "./App.css";
 
-// App is a thin orchestrator: useRecords owns the server data, useRecordEditor
-// owns the editing session, and presentation is delegated to
-// SummaryBar / RecordTable / RecordForm.
+// App is the View/container: it reads derived slices out of the store via
+// selectors and hands the presentational components exactly the props they need,
+// wiring their callbacks to intents. It holds no state and computes nothing
+// itself — the store owns state, selectors own derivation, intents own effects.
 export default function App() {
-  const { records, loading, loadError, saveRecord } = useRecords();
-  const editor = useRecordEditor(records, saveRecord);
+  const intents = useIntents();
 
-  // Derived output: computed from current state on every render, never stored.
-  const statusCounts = useMemo(() => computeStatusCounts(records), [records]);
+  // Kick off the one-time load. StrictMode double-invokes this in dev; the
+  // load intent is idempotent (it just refetches), so that's harmless.
+  useEffect(() => {
+    intents.load();
+  }, [intents]);
+
+  const records = useAppState((s) => s.records);
+  const loadStatus = useAppState((s) => s.loadStatus);
+  const loadError = useAppState((s) => s.loadError);
+  const selectedId = useAppState((s) => s.selectedId);
+  const draft = useAppState((s) => s.draft);
+  const saving = useAppState((s) => s.saving);
+  const saveError = useAppState((s) => s.saveError);
+
+  const selectedRecord = useAppState(selectSelectedRecord);
+  const selectedCount = useAppState(selectSelectedCount);
+  const statusCounts = useAppState(selectStatusCounts);
+  const dirty = useAppState(selectIsDirty);
 
   return (
     <div className="app">
@@ -25,37 +45,37 @@ export default function App() {
 
       <SummaryBar
         total={records.length}
-        selectedCount={editor.selectedId === null ? 0 : 1}
+        selectedCount={selectedCount}
         statusCounts={statusCounts}
       />
 
       <main className="layout">
         <section className="list-panel" aria-label="Records">
-          {loading && <p className="muted">Loading records…</p>}
-          {loadError && <p className="error">{loadError}</p>}
-          {!loading && !loadError && (
+          {loadStatus === "loading" && <p className="muted">Loading records…</p>}
+          {loadStatus === "error" && <p className="error">{loadError}</p>}
+          {loadStatus === "ready" && (
             <RecordTable
               records={records}
-              selectedId={editor.selectedId}
-              onSelect={editor.select}
+              selectedId={selectedId}
+              onSelect={intents.select}
             />
           )}
         </section>
 
         <section className="detail-panel" aria-label="Detail">
-          {!editor.selectedRecord ? (
+          {!selectedRecord ? (
             <p className="muted detail-empty">
               Select a record to view and edit its details.
             </p>
           ) : (
             <RecordForm
-              record={editor.selectedRecord}
-              draft={editor.draft}
-              dirty={editor.dirty}
-              saving={editor.saving}
-              saveError={editor.saveError}
-              onFieldChange={editor.changeField}
-              onSave={editor.save}
+              record={selectedRecord}
+              draft={draft}
+              dirty={dirty}
+              saving={saving}
+              saveError={saveError}
+              onFieldChange={intents.changeField}
+              onSave={intents.save}
             />
           )}
         </section>
