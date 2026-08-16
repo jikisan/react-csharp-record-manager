@@ -7,14 +7,10 @@ import RecordTable from "./components/RecordTable";
 import RecordForm from "./components/RecordForm";
 import "./App.css";
 
-// App is a thin orchestrator: useRecords owns the server data, useRecordEditor
-// owns the editing session, and presentation is delegated to
-// SummaryBar / RecordTable / RecordForm.
 export default function App() {
   const { records, loading, loadError, saveRecord } = useRecords();
   const editor = useRecordEditor(records, saveRecord);
 
-  // Derived output: computed from current state on every render, never stored.
   const statusCounts = useMemo(() => computeStatusCounts(records), [records]);
 
   return (
