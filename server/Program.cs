@@ -1,4 +1,4 @@
-// Record Manager API — .NET 8 Minimal API
+// Record Manager API — .NET 10 Minimal API
 // No external NuGet packages: uses only what ships with Microsoft.NET.Sdk.Web
 // (System.Text.Json is part of the framework). All data is hard-coded and
 // held in-memory for the lifetime of the running process.
@@ -41,14 +41,21 @@ var gate = new object(); // guards writes to the shared list
 // Endpoints
 // ---------------------------------------------------------------------------
 
-// Return all records.
-app.MapGet("/api/records", () => Results.Ok(records));
+// Return all records. Read under the lock so we never enumerate the list while
+// a concurrent save is replacing an element.
+app.MapGet("/api/records", () =>
+{
+    lock (gate) return Results.Ok(records.ToList());
+});
 
 // Return a single record by id.
 app.MapGet("/api/records/{id:int}", (int id) =>
 {
-    var found = records.FirstOrDefault(r => r.Id == id);
-    return found is null ? Results.NotFound() : Results.Ok(found);
+    lock (gate)
+    {
+        var found = records.FirstOrDefault(r => r.Id == id);
+        return found is null ? Results.NotFound() : Results.Ok(found);
+    }
 });
 
 // Update an existing record. The id in the route wins; the body carries the
@@ -61,9 +68,14 @@ app.MapPut("/api/records/{id:int}", (int id, RecordUpdate update) =>
         var index = records.FindIndex(r => r.Id == id);
         if (index < 0) return Results.NotFound();
 
+        // Name is required. Reject a save that would clear it.
+        var name = update.Name ?? records[index].Name;
+        if (string.IsNullOrWhiteSpace(name))
+            return Results.BadRequest("Name is required.");
+
         var saved = records[index] with
         {
-            Name = update.Name ?? records[index].Name,
+            Name = name,
             Category = update.Category ?? records[index].Category,
             Status = update.Status ?? records[index].Status,
             Description = update.Description ?? records[index].Description,

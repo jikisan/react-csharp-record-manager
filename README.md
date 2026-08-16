@@ -1,6 +1,6 @@
 # React + C# Record Manager
 
-A small full-stack "record manager". A **C# .NET 8 Minimal API** serves a
+A small full-stack "record manager". A **C# .NET 10 Minimal API** serves a
 hard-coded, in-memory list of project records; a **React (Vite)** front end
 lists them, lets you select and edit a record with controlled inputs, saves the
 change back through the API, and shows live derived counts.
@@ -10,7 +10,7 @@ template.
 
 ## Requirements
 
-- **.NET SDK 8.0+** (`dotnet --version`)
+- **.NET SDK 10.0+** (`dotnet --version`)
 - **Node.js 18+** and npm (`node --version`)
 
 ## Running it (two terminals)
