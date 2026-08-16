@@ -1,4 +1,4 @@
-const STATUS_OPTIONS = ["Active", "On Hold", "Completed"];
+const STATUS_OPTIONS = ["In Stock", "Reserved", "Sold"];
 
 // Controlled edit form for the selected record. `draft` holds the live input
 // values; `onFieldChange`/`onSave` report intent upward. The component owns no

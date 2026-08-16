@@ -164,17 +164,17 @@ body {
   font-weight: 600;
 }
 
-.status--active {
+.status--in-stock {
   background: #e3f5ea;
   color: #1f7a44;
 }
 
-.status--on-hold {
+.status--reserved {
   background: #fdf0dc;
   color: #9a6a12;
 }
 
-.status--completed {
+.status--sold {
   background: #e9ecf3;
   color: #4b5563;
 }
