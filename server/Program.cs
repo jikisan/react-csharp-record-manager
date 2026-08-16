@@ -26,12 +26,12 @@ app.UseCors(DevCorsPolicy);
 // client saves an edit. State survives for as long as the app is running.
 var initialRecords = new List<RecordItem>
 {
-    new(1, "Apollo Migration",   "Engineering", "Active",    "Migrate the legacy billing service to the new cloud platform."),
-    new(2, "Orion Redesign",     "Design",      "On Hold",   "Refresh the marketing site with the updated brand system."),
-    new(3, "Helios Analytics",   "Data",        "Active",    "Build the executive KPI dashboard from the warehouse."),
-    new(4, "Vega Onboarding",    "Product",     "Completed", "Revamp the first-run experience for new customers."),
-    new(5, "Titan Security",     "Engineering", "Active",    "Roll out single sign-on and audit logging across services."),
-    new(6, "Nova Support Portal","Product",     "On Hold",   "Self-service help center to reduce inbound support tickets."),
+    new(1, "Ford F-150",      "Truck", "In Stock", "Full-size pickup, 3.5L V6 EcoBoost, crew cab."),
+    new(2, "Tesla Model 3",   "EV",    "Reserved", "Long-range dual motor, autopilot, 358-mile range."),
+    new(3, "Toyota Camry",    "Sedan", "Sold",     "Hybrid LE, 51 mpg city, single owner."),
+    new(4, "Honda CR-V",      "SUV",   "In Stock", "AWD compact crossover, lane-keep assist."),
+    new(5, "Rivian R1T",      "Truck", "Reserved", "Electric adventure truck, quad motor, 328-mile range."),
+    new(6, "Mazda MX-5",      "Coupe", "In Stock", "Roadster, 6-speed manual, soft top."),
 };
 
 var records = new List<RecordItem>(initialRecords);
