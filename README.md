@@ -1,9 +1,13 @@
 # React + C# Record Manager
 
 A small full-stack "record manager". A **C# .NET 10 Minimal API** serves a
-hard-coded, in-memory list of project records; a **React (Vite)** front end
+hard-coded, in-memory list of vehicle records; a **React (Vite)** front end
 lists them, lets you select and edit a record with controlled inputs, saves the
 change back through the API, and shows live derived counts.
+
+The front end is organized around **custom hooks**: data-fetching and editing
+state each live in their own hook, presentational components take props only,
+and pure helpers compute derived values. No external state library.
 
 No database, no external services, and no packages beyond each project's
 template.
@@ -37,16 +41,46 @@ succeeds; the backend allows the front-end origin via CORS.
 
 ```
 react-csharp-record-manager/
-├── server/                 .NET 8 Minimal API
-│   ├── Program.cs          endpoints + in-memory data (initialRecords)
-│   ├── server.csproj       no PackageReferences
-│   └── NuGet.config        package sources cleared (framework-only build)
-└── client/                 React + Vite
+├── server/                     .NET 10 Minimal API
+│   ├── Program.cs              endpoints + in-memory data (initialRecords)
+│   ├── server.csproj           no PackageReferences
+│   └── NuGet.config            package sources cleared (framework-only build)
+└── client/                     React + Vite
     └── src/
-        ├── api.js          fetch wrapper for the API
-        ├── App.jsx         list, detail/edit panel, derived summary
-        └── App.css         styles
+        ├── main.jsx            root render
+        ├── App.jsx             wires hooks to the view components
+        ├── App.css             styles
+        ├── api/
+        │   └── records.js      fetch wrappers (fetchRecords, updateRecord)
+        ├── hooks/
+        │   ├── useRecords.js       load list + saveRecord (server state)
+        │   └── useRecordEditor.js  selection + draft + save (edit state)
+        ├── lib/
+        │   └── derive.js       pure helpers (computeStatusCounts, isDirty)
+        └── components/         presentational (props-only) components
+            ├── SummaryBar.jsx  derived totals + per-status chips
+            ├── RecordTable.jsx scrollable, selectable list
+            └── RecordForm.jsx  controlled edit form
 ```
+
+## Front-end architecture
+
+- **`useRecords`** — owns server state: loads the list on mount (with a
+  cancellation guard), tracks `loading`/`loadError`, and exposes `saveRecord`,
+  which PUTs and swaps the returned row into the list immutably.
+- **`useRecordEditor`** — owns edit state: `selectedId`, the editable `draft`,
+  `saving`/`saveError`. `select` copies a record's fields into the draft;
+  `changeField` updates one field; `save` skips when nothing is dirty, then
+  delegates to `saveRecord`.
+- **`lib/derive.js`** — pure functions (`computeStatusCounts`, `isDirty`) with
+  no React dependency, memoized at the call site.
+- **Components** — `SummaryBar`, `RecordTable`, `RecordForm` are props-only and
+  hold no app state; `App.jsx` wires the hooks to them.
+- **`api/records.js`** — the only place that talks HTTP; hooks depend on it, not
+  on `fetch` directly.
+
+Data flow is one-directional: hooks hold state → pass values + callbacks down as
+props → component events call the callbacks → hooks update state → re-render.
 
 ## API
 
@@ -57,26 +91,30 @@ react-csharp-record-manager/
 | PUT    | `/api/records/{id}`  | Update a record; returns the saved row |
 
 Each record: `id` (number), `name`, `category`, `status`, `description`.
-Edits are held in the server's in-memory list and persist for as long as the
-process runs.
+Seed data is six vehicles (trucks, EV, sedan, SUV, coupe); `status` is one of
+`In Stock`, `Reserved`, `Sold`. Edits are held in the server's in-memory list
+and persist for as long as the process runs. The `PUT` body is a partial
+update — omitted fields keep their current value, and a blank `name` is
+rejected with `400`.
 
 ## How the requirements are met
 
-- **In-memory seed data** — `initialRecords` in `Program.cs` holds six project
-  records; a copy backs the live list.
-- **List rendering with stable keys** — the table maps records to `<tr>` with
-  `key={record.id}`.
+- **In-memory seed data** — `initialRecords` in `Program.cs` holds six vehicle
+  records; a copy backs the live list, guarded by a lock.
+- **List rendering with stable keys** — `RecordTable` maps records to `<tr>`
+  with `key={record.id}`.
 - **Scrollable, multi-column list** — four columns (ID, Name, Category, Status)
-  in a scroll container.
-- **Row selection & detail panel** — clicking (or Enter/Space on) a row selects
-  it and copies its values into the edit form.
-- **Controlled inputs** — every field is driven by React state (`draft`) and an
-  `onChange` handler; nothing is uncontrolled.
+  in a scroll container, with a colored status chip.
+- **Row selection & detail panel** — clicking (or Enter/Space on) a row calls
+  `useRecordEditor.select`, copying its editable fields into the draft.
+- **Controlled inputs** — every field in `RecordForm` is driven by `draft`
+  state and a `changeField` handler; nothing is uncontrolled.
 - **Immutable updates** — selection and edits never mutate arrays/objects in
   place; state is replaced with new objects (`{ ...prev }`, `map`). The server
   likewise replaces the list element using a `with` expression.
-- **Save through the API** — `Save` issues a `PUT`, then the returned row
-  replaces the matching item in state, so the list and detail stay in sync.
-- **Derived output computed from current state** — total records, selected count
-  (0 or 1), and a per-status breakdown are all calculated during render, never
-  stored separately, so they stay accurate after every edit.
+- **Save through the API** — `save` skips when nothing is dirty, issues a `PUT`
+  via `updateRecord`, then the returned row replaces the matching item in state,
+  so the list and detail stay in sync.
+- **Derived output computed from current state** — total, selected count, and
+  the per-status breakdown are computed during render (memoized), never stored
+  separately, so they stay accurate after every edit.
